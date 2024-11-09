@@ -203,7 +203,7 @@ const ChatPage = () => {
             const postParams = new URLSearchParams();
             postParams.append('post_id', messageRef.id);
         postParams.append('room_id', id);
-          const response = await fetch(`${API_URL}/analyze_post?${postParams.toString()}&days=2`, {
+          const response = await fetch(`${API_URL}/analyze_post?${postParams.toString()}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

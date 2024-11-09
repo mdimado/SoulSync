@@ -15,7 +15,7 @@ const ChatBot = () => {
   
   const fetchBotResponse = async (userMessage) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/reflect?prompt=${userMessage}&user_id=${user.uid}&days=0`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/reflect?prompt=${userMessage}&user_id=${user.uid}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
