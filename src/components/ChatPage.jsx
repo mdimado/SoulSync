@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 import { 
   collection, 
   doc, 
@@ -201,7 +203,7 @@ const ChatPage = () => {
             const postParams = new URLSearchParams();
             postParams.append('post_id', messageRef.id);
         postParams.append('room_id', id);
-          const response = await fetch(`https://d551-103-177-232-33.ngrok-free.app/analyze_post?${postParams.toString()}`, {
+          const response = await fetch(`${API_URL}/analyze_post?${postParams.toString()}&days=2`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

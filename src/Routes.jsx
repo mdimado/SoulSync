@@ -9,6 +9,8 @@ import PrivateRoute from './components/PrivateRoute';
 import SocialAuth from './components/SocialAuth';
 import Profile from './components/Profile';
 import JournalEditor from './components/JournalEditor';
+import Analysis from './components/Analysis';
+import ChatBot from './components/Chatbot';
 
 const AppRoutes = () => {
   return (
@@ -55,6 +57,22 @@ const AppRoutes = () => {
         element={
           <PrivateRoute>
             <JournalEditor />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/analysis"
+        element={
+          <PrivateRoute>
+            <Analysis />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/support"
+        element={
+          <PrivateRoute>
+            <ChatBot />
           </PrivateRoute>
         }
       />

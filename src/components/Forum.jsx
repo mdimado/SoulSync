@@ -114,12 +114,18 @@ const Forum = () => {
         return;
       }
 
+      // Generate a default anonymous name if none exists
+      const defaultAnonymousName = `Anonymous${Math.floor(Math.random() * 10000)}`;
+      
       const discussionData = {
         ...newDiscussion,
         uid: user.uid,
         isAnonymous: userSettings.isAnonymous || false,
-        anonymousName: userSettings.anonymousName,
-        creatorName: userSettings.isAnonymous ? userSettings.anonymousName : (user.displayName || 'Anonymous User'),
+        // Use the userSettings.anonymousName if it exists, otherwise use the default
+        anonymousName: userSettings.anonymousName || defaultAnonymousName,
+        creatorName: userSettings.isAnonymous 
+          ? (userSettings.anonymousName || defaultAnonymousName) 
+          : (user.displayName || 'Anonymous User'),
         createdAt: serverTimestamp(),
         lastActivity: serverTimestamp(),
         replyCount: 0,

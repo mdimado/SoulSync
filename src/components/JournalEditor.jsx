@@ -3,48 +3,96 @@ import { collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firesto
 import { db } from '../firebase-config';
 import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
+import { Loader } from 'lucide-react';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const JournalEditor = () => {
   const { user } = useAuth();
   const [entries, setEntries] = useState([]);
   const [currentEntry, setCurrentEntry] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    let unsubscribe = () => {};
 
-    const q = query(
-      collection(db, `users/${user.uid}/journal`),
-      orderBy('createdAt', 'desc')
-    );
+    const fetchEntries = () => {
+      try {
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const journalEntries = [];
-      snapshot.forEach((doc) => {
-        journalEntries.push({
-          id: doc.id,
-          ...doc.data()
+        const q = query(
+          collection(db, `users/${user.uid}/journal`),
+          orderBy('createdAt', 'desc')
+        );
+
+        unsubscribe = onSnapshot(q, (snapshot) => {
+          const journalEntries = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setEntries(journalEntries);
+          setLoading(false);
+        }, (error) => {
+          setError('Failed to load journal entries. Please try again later.');
+          setLoading(false);
         });
-      });
-      setEntries(journalEntries);
-      setLoading(false);
-    });
+      } catch (err) {
+        setError('Failed to initialize journal. Please try again later.');
+        setLoading(false);
+      }
+    };
 
+    fetchEntries();
     return () => unsubscribe();
   }, [user]);
 
   const handleSave = async () => {
     if (!currentEntry.trim() || !user) return;
 
+    setSaving(true);
+    setError(null);
+
     try {
-      await addDoc(collection(db, `users/${user.uid}/journal`), {
+      const docRef = await addDoc(collection(db, `users/${user.uid}/journal`), {
         content: currentEntry,
         createdAt: new Date(),
         userId: user.uid
       });
+
       setCurrentEntry('');
+
+      // Analyze note only if API_URL is configured
+      if (API_URL) {
+        try {
+          const postParams = new URLSearchParams();
+          postParams.append('user_id', user.uid);
+          postParams.append('note_id', docRef.id);
+          
+          const response = await fetch(`${API_URL}/analyze_note?${postParams.toString()}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+
+          if (!response.ok) {
+            console.error('Analysis failed:', await response.text());
+          }
+        } catch (analysisError) {
+          console.error('Error analyzing entry:', analysisError);
+          // Don't surface analysis errors to user since it's not critical
+        }
+      }
     } catch (error) {
+      setError('Failed to save journal entry. Please try again.');
       console.error('Error saving journal entry:', error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -57,48 +105,63 @@ const JournalEditor = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-8 bg-white shadow rounded-lg p-4">
-        <div className="border-b pb-2 mb-4">
+    <div className="max-w-4xl mx-auto p-6 space-y-8">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <p>{error}</p>
+        </div>
+      )}
+
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="border-b pb-4 mb-6">
           <h2 className="text-2xl font-semibold text-gray-800">My Journal</h2>
         </div>
-        <div className="mb-6">
+        
+        <div className="space-y-4">
           <textarea
             value={currentEntry}
             onChange={(e) => setCurrentEntry(e.target.value)}
             placeholder="Write your thoughts here..."
             className="w-full h-64 p-4 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+            disabled={saving}
           />
-          <div className="mt-4 flex justify-end">
+          <div className="flex justify-end">
             <button 
               onClick={handleSave}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
-              disabled={!currentEntry.trim()}
+              className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+              disabled={!currentEntry.trim() || saving}
             >
-              Save Entry
+              {saving && <Loader className="w-4 h-4 animate-spin" />}
+              {saving ? 'Saving...' : 'Save Entry'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Previous Entries */}
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-800">Previous Entries</h2>
+        
         {loading ? (
-          <p>Loading entries...</p>
+          <div className="flex justify-center p-8">
+            <Loader className="w-8 h-8 animate-spin text-purple-600" />
+          </div>
         ) : entries.length === 0 ? (
-          <p className="text-gray-600">No journal entries yet. Start writing!</p>
+          <p className="text-gray-600 text-center py-8 bg-white shadow rounded-lg">
+            No journal entries yet. Start writing!
+          </p>
         ) : (
-          entries.map((entry) => (
-            <div key={entry.id} className="bg-white shadow rounded-lg p-4">
-              <div className="border-b pb-2 mb-2 text-sm text-gray-500">
-                {format(entry.createdAt.toDate(), 'MMMM d, yyyy - h:mm a')}
+          <div className="space-y-4">
+            {entries.map((entry) => (
+              <div key={entry.id} className="bg-white shadow rounded-lg p-6">
+                <div className="border-b pb-3 mb-3 text-sm text-gray-500">
+                  {format(entry.createdAt.toDate(), 'MMMM d, yyyy - h:mm a')}
+                </div>
+                <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                  {entry.content}
+                </p>
               </div>
-              <div>
-                <p className="whitespace-pre-wrap">{entry.content}</p>
-              </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>
