@@ -20,10 +20,8 @@ const Login = () => {
     
     try {
       await login(formData.email, formData.password);
-      // No need to show success toast here as it's handled in the AuthContext
       navigate('/');
     } catch (error) {
-      // Error toast is already handled in AuthContext
       setError(error.message);
     } finally {
       setLoading(false);
@@ -35,10 +33,8 @@ const Login = () => {
     setLoading(true);
     try {
       await loginWithGoogle();
-      // Success toast is handled in AuthContext
       navigate('/');
     } catch (error) {
-      // Error toast is handled in AuthContext
       setError(error.message);
     } finally {
       setLoading(false);

@@ -66,7 +66,6 @@ const JournalEditor = () => {
 
       setCurrentEntry('');
 
-      // Analyze note only if API_URL is configured
       if (API_URL) {
         try {
           const postParams = new URLSearchParams();
@@ -85,7 +84,6 @@ const JournalEditor = () => {
           }
         } catch (analysisError) {
           console.error('Error analyzing entry:', analysisError);
-          // Don't surface analysis errors to user since it's not critical
         }
       }
     } catch (error) {

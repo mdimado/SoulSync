@@ -26,7 +26,6 @@ const DailyMoodPopup = () => {
       try {
         const today = format(new Date(), 'yyyy-MM-dd');
         
-        // Simplified query using only date field
         const moodQuery = query(
           collection(db, `users/${user.uid}/moods`),
           where('date', '==', today)
@@ -39,7 +38,6 @@ const DailyMoodPopup = () => {
         }
       } catch (error) {
         console.error("Error checking mood:", error);
-        // Show popup anyway if there's an error
         setShowPopup(true);
       }
     };

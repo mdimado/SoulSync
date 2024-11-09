@@ -16,7 +16,6 @@ const NavBar = () => {
     }
   };
 
-  // Don't show navbar on login and signup pages
   if (['/login', '/signup'].includes(location.pathname)) {
     return null;
   }

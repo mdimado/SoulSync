@@ -20,7 +20,7 @@ const ForumCategories = {
 };
 
 const Forum = () => {
-  const { user } = useAuth(); // Use the auth hook instead of props
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [discussions, setDiscussions] = useState([]);
   const [activeCategory, setActiveCategory] = useState('ALL');
@@ -67,7 +67,6 @@ const Forum = () => {
         return {
           id: doc.id,
           ...data,
-          // If the post is anonymous, use anonymous name, otherwise use original name
           creatorName: data.isAnonymous ? data.anonymousName : data.creatorName
         };
       });
@@ -114,14 +113,12 @@ const Forum = () => {
         return;
       }
 
-      // Generate a default anonymous name if none exists
       const defaultAnonymousName = `Anonymous${Math.floor(Math.random() * 10000)}`;
       
       const discussionData = {
         ...newDiscussion,
         uid: user.uid,
         isAnonymous: userSettings.isAnonymous || false,
-        // Use the userSettings.anonymousName if it exists, otherwise use the default
         anonymousName: userSettings.anonymousName || defaultAnonymousName,
         creatorName: userSettings.isAnonymous 
           ? (userSettings.anonymousName || defaultAnonymousName) 
@@ -147,7 +144,6 @@ const Forum = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Forum Header */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
@@ -163,7 +159,6 @@ const Forum = () => {
           </button>
         </div>
 
-        {/* Search and Filter Bar */}
         <div className="mt-6 flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
@@ -188,7 +183,6 @@ const Forum = () => {
         </div>
       </div>
 
-      {/* Categories */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <button
           onClick={() => setActiveCategory('ALL')}
@@ -215,7 +209,6 @@ const Forum = () => {
         })}
       </div>
 
-      {/* Discussions List */}
       <div className="space-y-4">
         {discussions.map((discussion) => (
           <Link
@@ -264,7 +257,6 @@ const Forum = () => {
         ))}
       </div>
 
-      {/* New Discussion Modal */}
       {showNewDiscussionModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-2xl w-full p-6">
@@ -327,7 +319,6 @@ const Forum = () => {
         </div>
       )}
 
-      {/* Community Guidelines Reminder */}
       <div className="mt-8 bg-blue-50 rounded-xl p-6 flex items-start gap-4">
         <Shield className="h-6 w-6 text-blue-500 flex-shrink-0 mt-1" />
         <div>

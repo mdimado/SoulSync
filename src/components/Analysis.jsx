@@ -109,7 +109,6 @@ const Analysis = () => {
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-6">Sentiment Analysis</h1>
       
-      {/* Basic Stats */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Overall Statistics</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -132,7 +131,6 @@ const Analysis = () => {
         </div>
       </div>
 
-      {/* Emotion Averages */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Emotion Averages</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -145,7 +143,6 @@ const Analysis = () => {
         </div>
       </div>
 
-      {/* Recent Entries */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Recent Entries</h2>
         <div className="bg-white rounded shadow">
@@ -173,10 +170,8 @@ const Analysis = () => {
                 </div>
               </div>
               
-              {/* Content */}
               <p className="text-gray-700 mb-4">{sentiment.content}</p>
               
-              {/* Emotion Breakdown */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {Object.entries(sentiment.emotions).map(([emotion, value]) => (
                   <div key={emotion} className="text-sm">

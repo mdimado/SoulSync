@@ -15,7 +15,6 @@ const SentimentTracker = ({ sentiments }) => {
       return;
     }
     
-    // Group sentiments by date with validation
     const grouped = sentiments.reduce((acc, sentiment) => {
       console.log('Processing sentiment:', sentiment);
       
@@ -44,7 +43,6 @@ const SentimentTracker = ({ sentiments }) => {
     setGroupedSentiments(grouped);
   }, [sentiments]);
 
-  // Add debugging to getDominantEmotion
   const getDominantEmotion = (emotions) => {
     console.log('Getting dominant emotion for:', emotions);
     

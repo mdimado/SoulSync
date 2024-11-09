@@ -43,7 +43,6 @@ const ChatPage = () => {
     const [error, setError] = useState(null);
     const [userSettings, setUserSettings] = useState(null);
   
-    // Add userSettings fetch
     useEffect(() => {
       if (!user) return;
   
@@ -57,7 +56,6 @@ const ChatPage = () => {
       return () => unsubscribe();
     }, [user]);
   
-    // Debug logs for initial mount and props
     useEffect(() => {
       console.log('ChatPage mounted with ID:', id);
       console.log('Current user:', user);
@@ -70,7 +68,6 @@ const ChatPage = () => {
       }
     }, [id, user]);
   
-    // Fetch discussion details
     useEffect(() => {
       if (!id) return;
   
@@ -115,7 +112,6 @@ const ChatPage = () => {
       }
     }, [id, user?.uid, navigate]);
   
-    // Fetch messages
     useEffect(() => {
       if (!id) return;
   
@@ -151,7 +147,6 @@ const ChatPage = () => {
       }
     }, [id]);
   
-    // Scroll to bottom when new messages arrive
     useEffect(() => {
       console.log('Scrolling to bottom, message count:', messages.length);
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -185,11 +180,9 @@ const ChatPage = () => {
   
         console.log('Message data prepared:', messageData);
   
-        // Add message
         const messageRef = await addDoc(collection(db, 'forum', id, 'messages'), messageData);
         console.log('Message added with ID:', messageRef.id);
   
-        // Update discussion lastActivity
         const discussionRef = doc(db, 'forum', id);
         await updateDoc(discussionRef, {
           lastActivity: serverTimestamp(),
@@ -198,7 +191,6 @@ const ChatPage = () => {
         });
         console.log('Discussion updated with new activity');
   
-        // Send notification to localhost:8000
         try {
             const postParams = new URLSearchParams();
             postParams.append('post_id', messageRef.id);
@@ -269,7 +261,6 @@ const ChatPage = () => {
     }
   };
 
-  // Early return for error state
   if (error) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 text-center">
@@ -285,7 +276,6 @@ const ChatPage = () => {
     );
   }
 
-  // Rest of the component remains the same...
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

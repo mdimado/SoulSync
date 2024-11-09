@@ -10,6 +10,11 @@ const Home = () => {
   const { user } = useAuth();
   const [supportGroups, setSupportGroups] = useState([]);
   const [moodTracking, setMoodTracking] = useState(null);
+  const [moodStats, setMoodStats] = useState({
+    weeklyAverage: 0,
+    moodTrend: '',
+    trackingStreak: 0
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,11 +23,12 @@ const Home = () => {
       return;
     }
 
-    // Fetch support groups ordered by number of participants
+    console.log('User ID:', user.uid); 
+
     const q = query(
       collection(db, 'forum'),
-      orderBy('participants', 'desc'), // Order by number of participants
-      limit(3) // Limit to top 3
+      orderBy('participants', 'desc'),
+      limit(3)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -46,17 +52,89 @@ const Home = () => {
       setLoading(false);
     });
 
-    // Fetch user's latest mood tracking
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    console.log('Fetching moods since:', oneWeekAgo.toISOString()); 
+
     const moodQuery = query(
       collection(db, `users/${user.uid}/moods`),
-      orderBy('createdAt', 'desc'),
-      where('uid', '==', user.uid)
+      where('createdAt', '>=', oneWeekAgo),
+      orderBy('createdAt', 'desc')
     );
 
     const moodUnsubscribe = onSnapshot(moodQuery, (snapshot) => {
-      if (!snapshot.empty) {
-        setMoodTracking(snapshot.docs[0].data());
+      console.log('Mood snapshot size:', snapshot.size); 
+
+      const moodData = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const entry = {
+          ...data,
+          createdAt: data.createdAt?.toDate()
+        };
+        console.log('Mood entry:', entry); 
+        moodData.push(entry);
+      });
+
+      console.log('Processed mood data:', moodData); 
+
+      if (moodData.length > 0) {
+        console.log('Most recent mood:', moodData[0]); 
+        setMoodTracking(moodData[0]);
       }
+
+      const weeklyAverage = moodData.length > 0
+        ? moodData.reduce((sum, entry) => {
+            console.log('Adding to sum:', entry.mood); 
+            return sum + entry.mood;
+          }, 0) / moodData.length
+        : 0;
+
+      console.log('Calculated weekly average:', weeklyAverage); 
+
+      let trend = 'Not enough data';
+      if (moodData.length >= 2) {
+        const recentMoods = moodData.slice(0, Math.min(5, moodData.length));
+        console.log('Recent moods for trend:', recentMoods);
+        trend = recentMoods[0].mood > recentMoods[recentMoods.length - 1].mood
+          ? 'Improving'
+          : 'Declining';
+      }
+
+      console.log('Calculated mood trend:', trend); 
+
+      let streak = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      console.log('Calculating streak starting from:', today.toISOString()); 
+
+      for (let i = 0; i < moodData.length; i++) {
+        const entryDate = new Date(moodData[i].createdAt);
+        entryDate.setHours(0, 0, 0, 0);
+        
+        const daysDiff = Math.floor((today - entryDate) / (1000 * 60 * 60 * 24));
+        
+        console.log('Streak entry date:', entryDate.toISOString(), 'Days diff:', daysDiff); 
+
+        if (daysDiff === streak) {
+          streak++;
+          console.log('Streak increased to:', streak); 
+        } else {
+          console.log('Streak broken at:', streak); 
+          break;
+        }
+      }
+
+      const newMoodStats = {
+        weeklyAverage: weeklyAverage.toFixed(1),
+        moodTrend: trend,
+        trackingStreak: streak
+      };
+
+      console.log('Setting new mood stats:', newMoodStats);
+      setMoodStats(newMoodStats);
     });
 
     return () => {
@@ -64,6 +142,11 @@ const Home = () => {
       moodUnsubscribe();
     };
   }, [user]);
+
+  useEffect(() => {
+    console.log('Current moodTracking:', moodTracking);
+    console.log('Current moodStats:', moodStats);
+  }, [moodTracking, moodStats]);
 
   if (!user) {
     return (
@@ -82,11 +165,13 @@ const Home = () => {
     );
   }
 
+  console.log('Rendering with moodTracking:', moodTracking);
+  console.log('Rendering with moodStats:', moodStats);
   return (
     <><DailyMoodPopup/>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-      {/* Hero Section */}
+
       <div className="bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 rounded-3xl p-8 mb-12">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-4xl font-bold text-gray-800 mb-6">
@@ -109,7 +194,6 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Features Grid */}
       <div className="grid md:grid-cols-3 gap-8 mb-12">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="mb-4">
@@ -142,7 +226,6 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Support Groups Section */}
       <div className="mb-12">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Popular Support Groups</h2>
@@ -187,7 +270,6 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Mood Tracking Summary */}
       {moodTracking && (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-12">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Your Mood Journey</h2>
@@ -200,21 +282,22 @@ const Home = () => {
             </div>
             <div className="p-4 bg-purple-50 rounded-lg">
               <h4 className="text-sm font-medium text-gray-600 mb-1">Weekly Average</h4>
-              <p className="text-2xl font-semibold text-purple-600">7.5</p>
+              <p className="text-2xl font-semibold text-purple-600">{moodStats.weeklyAverage}</p>
             </div>
             <div className="p-4 bg-pink-50 rounded-lg">
               <h4 className="text-sm font-medium text-gray-600 mb-1">Mood Trend</h4>
-              <p className="text-2xl font-semibold text-pink-600">↗ Improving</p>
+              <p className="text-2xl font-semibold text-pink-600">
+                {moodStats.moodTrend === 'Improving' ? '↗' : '↘'} {moodStats.moodTrend}
+              </p>
             </div>
             <div className="p-4 bg-green-50 rounded-lg">
               <h4 className="text-sm font-medium text-gray-600 mb-1">Tracking Streak</h4>
-              <p className="text-2xl font-semibold text-green-600">5 days</p>
+              <p className="text-2xl font-semibold text-green-600">{moodStats.trackingStreak} days</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Quick Actions */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-xl text-white">
           <h3 className="text-xl font-semibold mb-4">Need Immediate Support?</h3>

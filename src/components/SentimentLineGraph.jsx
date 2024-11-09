@@ -10,7 +10,6 @@ const SentimentLineGraph = ({ sentiments }) => {
       return [];
     }
 
-    // Group sentiments by date
     const groupedByDate = sentiments.reduce((acc, sentiment) => {
       const dateObj = new Date(sentiment.createdAt);
       console.log('Processing date:', dateObj);
@@ -35,7 +34,6 @@ const SentimentLineGraph = ({ sentiments }) => {
         };
       }
       
-      // Add emotion scores to arrays
       if (sentiment.emotions && typeof sentiment.emotions === 'object') {
         Object.entries(sentiment.emotions).forEach(([emotion, score]) => {
           if (typeof score === 'number' && !isNaN(score)) {
@@ -49,13 +47,11 @@ const SentimentLineGraph = ({ sentiments }) => {
 
     console.log('Grouped by date:', groupedByDate);
 
-    // Calculate daily averages for each emotion
     const dailyAverages = Object.entries(groupedByDate).map(([date, data]) => {
       const averages = {
         date: date,
       };
 
-      // Calculate average for each emotion
       Object.entries(data).forEach(([emotion, scores]) => {
         if (Array.isArray(scores)) {
           averages[emotion] = scores.length > 0 
@@ -68,20 +64,19 @@ const SentimentLineGraph = ({ sentiments }) => {
       return averages;
     });
 
-    // Sort by date
     const sortedData = dailyAverages.sort((a, b) => new Date(a.date) - new Date(b.date));
     console.log('Final sorted data:', sortedData);
     return sortedData;
   }, [sentiments]);
 
   const emotionColors = {
-    joy: "#22c55e",      // Green
-    surprise: "#f59e0b", // Amber
-    neutral: "#64748b",  // Slate
-    disgust: "#eab308",  // Yellow
-    fear: "#7c3aed",     // Purple
-    sadness: "#3b82f6",  // Blue
-    anger: "#ef4444"     // Red
+    joy: "#22c55e",      
+    surprise: "#f59e0b", 
+    neutral: "#64748b", 
+    disgust: "#eab308", 
+    fear: "#7c3aed",     
+    sadness: "#3b82f6",  
+    anger: "#ef4444"     
   };
 
   const CustomTooltip = ({ active, payload, label }) => {

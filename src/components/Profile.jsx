@@ -50,7 +50,6 @@ const Profile = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Fetch user document
     const userRef = doc(db, 'users', user.uid);
     const unsubscribeUser = onSnapshot(userRef, (doc) => {
       if (doc.exists()) {
@@ -66,7 +65,6 @@ const Profile = () => {
       }
     });
 
-    // Set up real-time listener for mood data
     const moodRef = collection(db, `users/${user.uid}/moods`);
     const unsubscribeMood = onSnapshot(moodRef, (snapshot) => {
       const moods = {};
@@ -96,7 +94,7 @@ const Profile = () => {
   }, [user]);
 
   const generateAnonymousName = () => {
-    const randomNum = Math.floor(10000 + Math.random() * 90000); // Generate 5-digit number
+    const randomNum = Math.floor(10000 + Math.random() * 90000); 
     return `user_${randomNum}`;
   };
 
@@ -126,7 +124,6 @@ const Profile = () => {
     }
   };
 
-  // Dummy data for local resources remains the same
   const [localResources] = useState([
     {
       name: "Dr. Emily Chen",
@@ -184,20 +181,16 @@ const Profile = () => {
 
   const renderMoodGraph = () => {
     const today = new Date();
-    const startDate = subDays(today, 51 * 7); // For last 52 weeks
+    const startDate = subDays(today, 51 * 7); 
     const endDate = today;
     
-    // Get all dates in the range
     const dates = eachDayOfInterval({ start: startDate, end: endDate });
     
-    // Group dates by week
     const weeks = [];
     let currentWeek = [];
     
-    // Get the day index (0-6) for the first date
     const firstDay = startDate.getDay();
     
-    // Add empty cells for alignment
     for (let i = 0; i < firstDay; i++) {
       currentWeek.push(null);
     }
@@ -215,7 +208,6 @@ const Profile = () => {
       }
     });
     
-    // Fill the last week with null values if needed
     while (currentWeek.length < 7) {
       currentWeek.push(null);
     }
@@ -223,7 +215,6 @@ const Profile = () => {
       weeks.push(currentWeek);
     }
     
-    // Transpose the weeks array to create rows
     const rows = Array(7).fill().map((_, rowIndex) => 
       weeks.map(week => week[rowIndex])
     );
@@ -258,7 +249,6 @@ const Profile = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Profile Header */}
       <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-3xl p-8 mb-8">
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-6">
@@ -290,7 +280,6 @@ const Profile = () => {
             </div>
           </div>
           
-          {/* Anonymous Toggle */}
           <div className="flex items-center gap-4">
             <button
               onClick={toggleAnonymous}
@@ -312,7 +301,6 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Current Mood and Stats */}
       <div className="grid md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
@@ -354,7 +342,6 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Mood Tracking Graph */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-8">
         <h2 className="text-xl font-bold text-gray-800 mb-6">Your Mood Journey</h2>
         <div className="overflow-x-auto pb-4">
@@ -375,7 +362,6 @@ const Profile = () => {
       <SentimentTracker sentiments={sentiments} />
       <SentimentLineGraph sentiments={sentiments} />
 
-      {/* Local Mental Health Resources */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-8">
         <h2 className="text-xl font-bold text-gray-800 mb-6">Local Mental Health Resources</h2>
         <div className="grid md:grid-cols-3 gap-6">
@@ -400,7 +386,6 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Wellness Resources */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
           <h3 className="text-xl font-semibold mb-4">Self-Care Resources</h3>
