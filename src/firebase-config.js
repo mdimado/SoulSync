@@ -1,0 +1,16 @@
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAmt5b5Vb1C1IlD-huOMhtmCgbUgY0FlWc",
+    authDomain: "soulsync-68899.firebaseapp.com",
+    projectId: "soulsync-68899",
+    storageBucket: "soulsync-68899.firebasestorage.app",
+    messagingSenderId: "411428144202",
+    appId: "1:411428144202:web:42aee231da98ff938bd2b3"
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
