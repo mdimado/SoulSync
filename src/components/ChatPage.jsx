@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+
 import { 
   collection, 
   doc, 
@@ -27,162 +28,203 @@ import {
 import toast from 'react-hot-toast';
 
 const ChatPage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const messagesEndRef = useRef(null);
-  const [discussion, setDiscussion] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [supportCount, setSupportCount] = useState(0);
-  const [hasSupported, setHasSupported] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Debug logs for initial mount and props
-  useEffect(() => {
-    console.log('ChatPage mounted with ID:', id);
-    console.log('Current user:', user);
-    
-    if (!id) {
-      console.error('No discussion ID provided');
-      setError('No discussion ID provided');
-      setIsLoading(false);
-      return;
-    }
-  }, [id, user]);
-
-  // Fetch discussion details
-  useEffect(() => {
-    if (!id) return;
-
-    console.log('Attempting to fetch discussion:', id);
-    setError(null);
-
-    const discussionRef = doc(db, 'forum', id);
-    
-    try {
-      const unsubscribe = onSnapshot(discussionRef, (doc) => {
-        console.log('Discussion snapshot received:', doc.exists());
-        
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const messagesEndRef = useRef(null);
+    const [discussion, setDiscussion] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [supportCount, setSupportCount] = useState(0);
+    const [hasSupported, setHasSupported] = useState(false);
+    const [error, setError] = useState(null);
+    const [userSettings, setUserSettings] = useState(null);
+  
+    // Add userSettings fetch
+    useEffect(() => {
+      if (!user) return;
+  
+      const userRef = doc(db, 'users', user.uid);
+      const unsubscribe = onSnapshot(userRef, (doc) => {
         if (doc.exists()) {
-          const discussionData = { id: doc.id, ...doc.data() };
-          console.log('Discussion data:', discussionData);
-          setDiscussion(discussionData);
-          setSupportCount(discussionData.supportCount || 0);
-          setHasSupported(discussionData.supporters?.includes(user?.uid));
-        } else {
-          console.error('Discussion not found');
-          setError('Discussion not found');
-          toast.error('Discussion not found');
-          navigate('/forum');
+          setUserSettings(doc.data());
         }
+      });
+  
+      return () => unsubscribe();
+    }, [user]);
+  
+    // Debug logs for initial mount and props
+    useEffect(() => {
+      console.log('ChatPage mounted with ID:', id);
+      console.log('Current user:', user);
+      
+      if (!id) {
+        console.error('No discussion ID provided');
+        setError('No discussion ID provided');
         setIsLoading(false);
-      }, (error) => {
-        console.error('Error fetching discussion:', error);
-        setError(`Error fetching discussion: ${error.message}`);
+        return;
+      }
+    }, [id, user]);
+  
+    // Fetch discussion details
+    useEffect(() => {
+      if (!id) return;
+  
+      console.log('Attempting to fetch discussion:', id);
+      setError(null);
+  
+      const discussionRef = doc(db, 'forum', id);
+      
+      try {
+        const unsubscribe = onSnapshot(discussionRef, (doc) => {
+          console.log('Discussion snapshot received:', doc.exists());
+          
+          if (doc.exists()) {
+            const discussionData = { id: doc.id, ...doc.data() };
+            console.log('Discussion data:', discussionData);
+            setDiscussion(discussionData);
+            setSupportCount(discussionData.supportCount || 0);
+            setHasSupported(discussionData.supporters?.includes(user?.uid));
+          } else {
+            console.error('Discussion not found');
+            setError('Discussion not found');
+            toast.error('Discussion not found');
+            navigate('/forum');
+          }
+          setIsLoading(false);
+        }, (error) => {
+          console.error('Error fetching discussion:', error);
+          setError(`Error fetching discussion: ${error.message}`);
+          setIsLoading(false);
+          toast.error('Error loading discussion');
+        });
+  
+        return () => {
+          console.log('Cleaning up discussion listener');
+          unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error setting up discussion listener:', error);
+        setError(`Error setting up discussion listener: ${error.message}`);
         setIsLoading(false);
         toast.error('Error loading discussion');
-      });
-
-      return () => {
-        console.log('Cleaning up discussion listener');
-        unsubscribe();
-      };
-    } catch (error) {
-      console.error('Error setting up discussion listener:', error);
-      setError(`Error setting up discussion listener: ${error.message}`);
-      setIsLoading(false);
-      toast.error('Error loading discussion');
-    }
-  }, [id, user?.uid, navigate]);
-
-  // Fetch messages
-  useEffect(() => {
-    if (!id) return;
-
-    console.log('Attempting to fetch messages for discussion:', id);
-    
-    try {
-      const q = query(
-        collection(db, 'forum', id, 'messages'),
-        orderBy('createdAt', 'asc')
-      );
-
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        console.log('Messages snapshot received, count:', snapshot.docs.length);
-        
-        const messageList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        console.log('Processed messages:', messageList.length);
-        setMessages(messageList);
-      }, (error) => {
-        console.error('Error fetching messages:', error);
+      }
+    }, [id, user?.uid, navigate]);
+  
+    // Fetch messages
+    useEffect(() => {
+      if (!id) return;
+  
+      console.log('Attempting to fetch messages for discussion:', id);
+      
+      try {
+        const q = query(
+          collection(db, 'forum', id, 'messages'),
+          orderBy('createdAt', 'asc')
+        );
+  
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          console.log('Messages snapshot received, count:', snapshot.docs.length);
+          
+          const messageList = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          console.log('Processed messages:', messageList.length);
+          setMessages(messageList);
+        }, (error) => {
+          console.error('Error fetching messages:', error);
+          toast.error('Error loading messages');
+        });
+  
+        return () => {
+          console.log('Cleaning up messages listener');
+          unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error setting up messages listener:', error);
         toast.error('Error loading messages');
-      });
+      }
+    }, [id]);
+  
+    // Scroll to bottom when new messages arrive
+    useEffect(() => {
+      console.log('Scrolling to bottom, message count:', messages.length);
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+  
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      
+      if (!user) {
+        console.log('Submit attempted without user');
+        toast.error('Please sign in to participate in discussions');
+        navigate('/login');
+        return;
+      }
+  
+      if (!newMessage.trim()) return;
+  
+      console.log('Attempting to send message');
+      
+      try {
+        const messageData = {
+          content: newMessage.trim(),
+          uid: user.uid,
+          createdAt: serverTimestamp(),
+          isAnonymous: userSettings?.isAnonymous || false,
+          authorName: userSettings?.isAnonymous ? 
+            userSettings.anonymousName : 
+            (user.displayName || 'Anonymous User'),
+          authorPhotoURL: userSettings?.isAnonymous ? null : user.photoURL,
+        };
+  
+        console.log('Message data prepared:', messageData);
+  
+        // Add message
+        const messageRef = await addDoc(collection(db, 'forum', id, 'messages'), messageData);
+        console.log('Message added with ID:', messageRef.id);
+  
+        // Update discussion lastActivity
+        const discussionRef = doc(db, 'forum', id);
+        await updateDoc(discussionRef, {
+          lastActivity: serverTimestamp(),
+          replyCount: (discussion?.replyCount || 0) + 1,
+          participants: [...new Set([...(discussion?.participants || []), user.uid])]
+        });
+        console.log('Discussion updated with new activity');
+  
+        // Send notification to localhost:8000
+        try {
+            const postParams = new URLSearchParams();
+            postParams.append('post_id', messageRef.id);
+        postParams.append('room_id', id);
+          const response = await fetch(`https://d551-103-177-232-33.ngrok-free.app/analyze_post?${postParams.toString()}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            
+          });
+  
+          if (!response.ok) {
+            console.error('Failed to send message notification:', await response.text());
+          } else {
+            console.log('Message notification sent successfully');
+          }
+        } catch (notificationError) {
+          console.error('Error sending message notification:', notificationError);
+        }
+  
+        setNewMessage('');
+      } catch (error) {
+        console.error('Error sending message:', error);
+        toast.error('Failed to send message');
+      }
+    };
 
-      return () => {
-        console.log('Cleaning up messages listener');
-        unsubscribe();
-      };
-    } catch (error) {
-      console.error('Error setting up messages listener:', error);
-      toast.error('Error loading messages');
-    }
-  }, [id]);
-
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
-    console.log('Scrolling to bottom, message count:', messages.length);
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!user) {
-      console.log('Submit attempted without user');
-      toast.error('Please sign in to participate in discussions');
-      navigate('/login');
-      return;
-    }
-
-    if (!newMessage.trim()) return;
-
-    console.log('Attempting to send message');
-    
-    try {
-      const messageData = {
-        content: newMessage.trim(),
-        createdBy: user.uid,
-        createdAt: serverTimestamp(),
-        authorName: user.displayName || 'Anonymous User',
-        authorPhotoURL: user.photoURL || null,
-      };
-
-      console.log('Message data prepared:', messageData);
-
-      // Add message
-      const messageRef = await addDoc(collection(db, 'forum', id, 'messages'), messageData);
-      console.log('Message added with ID:', messageRef.id);
-
-      // Update discussion lastActivity
-      const discussionRef = doc(db, 'forum', id);
-      await updateDoc(discussionRef, {
-        lastActivity: serverTimestamp(),
-        replyCount: (discussion?.replyCount || 0) + 1,
-        participants: [...new Set([...(discussion?.participants || []), user.uid])]
-      });
-      console.log('Discussion updated with new activity');
-
-      setNewMessage('');
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Failed to send message');
-    }
-  };
 
   const handleSupport = async () => {
     if (!user) {
@@ -323,9 +365,9 @@ const ChatPage = () => {
           {messages.map((message, index) => (
             <div 
               key={message.id}
-              className={`mb-4 ${message.createdBy === user?.uid ? 'ml-auto max-w-[80%]' : 'mr-auto max-w-[80%]'}`}
+              className={`mb-4 ${message.uid === user?.uid ? 'ml-auto max-w-[80%]' : 'mr-auto max-w-[80%]'}`}
             >
-              <div className={`flex items-start gap-3 ${message.createdBy === user?.uid ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex items-start gap-3 ${message.uid === user?.uid ? 'flex-row-reverse' : ''}`}>
                 <div className="flex-shrink-0">
                   {message.authorPhotoURL ? (
                     <img 
@@ -351,7 +393,7 @@ const ChatPage = () => {
                     </span>
                   </div>
                   <div className={`p-3 rounded-lg ${
-                    message.createdBy === user?.uid 
+                    message.uid === user?.uid 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-gray-100 text-gray-800'
                   }`}>

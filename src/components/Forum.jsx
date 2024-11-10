@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, doc } from 'firebase/firestore';
 import { db } from '../firebase-config';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -31,6 +31,21 @@ const Forum = () => {
     category: 'GENERAL',
     content: ''
   });
+  const [userSettings, setUserSettings] = useState(null);
+
+
+  useEffect(() => {
+    if (!user) return;
+
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userRef, (doc) => {
+      if (doc.exists()) {
+        setUserSettings(doc.data());
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   useEffect(() => {
     let q = query(
@@ -46,11 +61,16 @@ const Forum = () => {
       );
     }
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const discussionList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const discussionList = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          // If the post is anonymous, use anonymous name, otherwise use original name
+          creatorName: data.isAnonymous ? data.anonymousName : data.creatorName
+        };
+      });
 
       if (searchTerm) {
         const filtered = discussionList.filter(disc => 
@@ -69,7 +89,7 @@ const Forum = () => {
   const handleNewDiscussionClick = () => {
     if (!user) {
       toast.error('Please sign in to start a discussion');
-      navigate('/login'); // Now we can safely redirect to login
+      navigate('/login');
       return;
     }
     setShowNewDiscussionModal(true);
@@ -78,7 +98,7 @@ const Forum = () => {
   const createDiscussion = async (e) => {
     e.preventDefault();
 
-    if (!user) {
+    if (!user || !userSettings) {
       toast.error('You must be signed in to create a discussion');
       setShowNewDiscussionModal(false);
       navigate('/login');
@@ -96,8 +116,10 @@ const Forum = () => {
 
       const discussionData = {
         ...newDiscussion,
-        createdBy: user.uid,
-        creatorName: user.displayName || 'Anonymous User',
+        uid: user.uid,
+        isAnonymous: userSettings.isAnonymous || false,
+        anonymousName: userSettings.anonymousName,
+        creatorName: userSettings.isAnonymous ? userSettings.anonymousName : (user.displayName || 'Anonymous User'),
         createdAt: serverTimestamp(),
         lastActivity: serverTimestamp(),
         replyCount: 0,

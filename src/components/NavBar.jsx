@@ -28,7 +28,7 @@ const NavBar = () => {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link to="/" className="text-xl font-bold text-purple-600">
-                SoulSync
+              mindscape
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -53,14 +53,26 @@ const NavBar = () => {
               >
                 Forum
               </Link>
+              <Link
+                to="/journal"
+                className={`${
+                  location.pathname === '/journal'
+                    ? 'border-purple-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+              >
+                My Journal
+              </Link>
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {user ? (
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">
+                <Link to='/profile'>
+                <span className="text-sm text-purple-700">
                   {user.displayName || user.email}
                 </span>
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"

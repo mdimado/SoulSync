@@ -6,6 +6,9 @@ import Home from './components/Home';
 import ChatPage from './components/ChatPage';
 import Forum from './components/Forum';
 import PrivateRoute from './components/PrivateRoute';
+import SocialAuth from './components/SocialAuth';
+import Profile from './components/Profile';
+import JournalEditor from './components/JournalEditor';
 
 const AppRoutes = () => {
   return (
@@ -28,6 +31,30 @@ const AppRoutes = () => {
         element={
           <PrivateRoute>
             <ChatPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/connect-social"
+        element={
+          <PrivateRoute>
+            <SocialAuth />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <PrivateRoute>
+            <Profile />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/journal"
+        element={
+          <PrivateRoute>
+            <JournalEditor />
           </PrivateRoute>
         }
       />

@@ -1,33 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, limit } from 'firebase/firestore';
 import { db } from '../firebase-config';
 import { Link } from 'react-router-dom';
-import { Heart, Users, BarChart2, MessageCircle, Plus } from 'lucide-react';
+import { Heart, Users, BarChart2, MessageCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import DailyMoodPopup from './DailyMoodPopup';
 
 const Home = () => {
-  const { user } = useAuth(); // Use the auth hook instead of props
+  const { user } = useAuth();
   const [supportGroups, setSupportGroups] = useState([]);
   const [moodTracking, setMoodTracking] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Only fetch data if user is logged in
     if (!user) {
       setLoading(false);
       return;
     }
 
-    // Fetch support groups
+    // Fetch support groups ordered by number of participants
     const q = query(
       collection(db, 'forum'),
-      orderBy('createdAt', 'desc')
+      orderBy('participants', 'desc'), // Order by number of participants
+      limit(3) // Limit to top 3
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const groups = [];
       snapshot.forEach((doc) => {
-        groups.push({ id: doc.id, ...doc.data() });
+        const data = doc.data();
+        groups.push({ 
+          id: doc.id,
+          title: data.title,
+          description: data.content,
+          category: data.category,
+          memberCount: data.participants?.length || 1,
+          messageCount: data.replyCount || 0,
+          supportCount: data.supportCount || 0,
+          uid: data.uid,
+          creatorName: data.creatorName,
+          createdAt: data.createdAt
+        });
       });
       setSupportGroups(groups);
       setLoading(false);
@@ -37,7 +50,7 @@ const Home = () => {
     const moodQuery = query(
       collection(db, `users/${user.uid}/moods`),
       orderBy('createdAt', 'desc'),
-      where('userId', '==', user.uid)
+      where('uid', '==', user.uid)
     );
 
     const moodUnsubscribe = onSnapshot(moodQuery, (snapshot) => {
@@ -51,22 +64,6 @@ const Home = () => {
       moodUnsubscribe();
     };
   }, [user]);
-
-  const createSupportGroup = async (title) => {
-    try {
-      await addDoc(collection(db, 'forum'), {
-        title,
-        createdBy: user.uid,
-        createdAt: serverTimestamp(),
-        lastMessage: null,
-        type: 'support_group',
-        description: `A safe space to discuss ${title}`,
-        memberCount: 1,
-      });
-    } catch (error) {
-      console.error('Error creating support group:', error);
-    }
-  };
 
   if (!user) {
     return (
@@ -86,7 +83,9 @@ const Home = () => {
   }
 
   return (
+    <><DailyMoodPopup/>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 rounded-3xl p-8 mb-12">
         <div className="max-w-3xl mx-auto text-center">
@@ -101,9 +100,11 @@ const Home = () => {
             <button className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition">
               Find Support
             </button>
-            <button className="bg-white text-purple-600 px-6 py-3 rounded-lg hover:bg-gray-50 transition">
-              Track Your Mood
-            </button>
+            <Link to='/profile'>
+              <button className="bg-white text-purple-600 px-6 py-3 rounded-lg hover:bg-gray-50 transition">
+                Track Your Mood
+              </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -144,14 +145,14 @@ const Home = () => {
       {/* Support Groups Section */}
       <div className="mb-12">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Support Groups</h2>
-          <button 
-            onClick={() => createSupportGroup('New Support Group')}
+          <h2 className="text-2xl font-bold text-gray-800">Popular Support Groups</h2>
+          <Link 
+            to="/forum"
             className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
           >
-            <Plus className="h-5 w-5" />
-            Create Group
-          </button>
+            View All Groups
+            <ArrowRight className="h-5 w-5" />
+          </Link>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -165,15 +166,19 @@ const Home = () => {
                 className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition"
               >
                 <h3 className="text-xl font-semibold mb-2">{group.title}</h3>
-                <p className="text-gray-600 mb-4">{group.description}</p>
+                <p className="text-gray-600 mb-4 line-clamp-2">{group.description}</p>
                 <div className="flex items-center gap-4 text-sm text-gray-500">
                   <span className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
-                    {group.memberCount || 1} members
+                    {group.memberCount} participants
                   </span>
                   <span className="flex items-center gap-1">
                     <MessageCircle className="h-4 w-4" />
-                    {group.messageCount || 0} messages
+                    {group.messageCount} replies
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Heart className="h-4 w-4" />
+                    {group.supportCount} support
                   </span>
                 </div>
               </Link>
@@ -232,6 +237,7 @@ const Home = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
